@@ -24,32 +24,29 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         // Set the background frame color
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.2f)
+        GLES20.glClearColor(0.9f, 0.9f, 0.9f, 0.2f)
         // initialize a triangle
         mTriangle = Triangle()
     }
 
     override fun onDrawFrame(unused: GL10) {
-        // Redraw background color
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
-        // Set the camera position (View matrix)
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1.0f, 0.0f)
-
-        Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
-
-        // Calculate the projection and view transformation
         // Create a rotation transformation for the triangle
         val scratch = FloatArray(16)
         val time = SystemClock.uptimeMillis() % 4000L
         val angle = 0.090f * time.toInt()
+        // Redraw background color
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+        // Set the camera position (View matrix)
+        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1.0f, 0.0f)
+        Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
+
         Matrix.setRotateM(rotationMatrix, 0, angle, 0f, 0f, -1.0f)
 
         // Combine the rotation matrix with the projection and camera view
         // Note that the vPMatrix factor *must be first* in order
         // for the matrix multiplication product to be correct.
         Matrix.multiplyMM(scratch, 0, vPMatrix, 0, rotationMatrix, 0)
-
-        mTriangle.draw(vPMatrix)
+        mTriangle.draw(scratch)
 
     }
     // vPMatrix is an abbreviation for "Model View Projection Matrix"
