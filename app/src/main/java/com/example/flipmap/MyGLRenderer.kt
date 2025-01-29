@@ -6,31 +6,31 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.os.SystemClock
+import android.util.Log
 import androidx.core.content.contentValuesOf
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
+import kotlin.math.sin
+import kotlin.math.cos
+import kotlin.math.abs
 
 // number of coordinates per vertex in this array
 const val COORDS_PER_VERTEX = 3
-var triangleCoords = floatArrayOf(     // in counterclockwise order:
-    0.0f, 0.622008459f, 0.0f,      // top
-    -0.5f, -0.311004243f, 0.0f,    // bottom left
-    0.5f, -0.311004243f, 0.0f     // bottom right
-)
 
 class MyGLRenderer : GLSurfaceView.Renderer {
     private lateinit var mRoute: ShapeRenderer
-    private var route_coordinates = FloatArray(0)
+    private var route_coordinates = FloatArray(0) // TODO make these actual coordinates
+    private var route_gl_coordinates = FloatArray(0) // this holds the coordinates, but 0.0-1.0
     private var route_needs_update = true
+    private var user_location = FloatArray(3)
     private val rotationMatrix = FloatArray(16)
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         // Set the background frame color
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
-        // initialize a triangle
+        // initialize route
         mRoute = ShapeRenderer()
-        mRoute.setVertices(triangleCoords)
     }
 
     // probably will do a lot of work here
@@ -39,25 +39,26 @@ class MyGLRenderer : GLSurfaceView.Renderer {
             mRoute.setVertices(route_coordinates)
             route_needs_update = false
         }
-        // Create a rotation transformation for the triangle
+        // Create a rotation transformation for the route
         val scratch = FloatArray(16)
-        // val time = SystemClock.uptimeMillis() % 4000L
+        val time = SystemClock.uptimeMillis() % 4000L
         val angle = 0.090f
+        val x = abs(sin(time/20000.0)).toFloat()* 0.1f
+        val y = abs(cos(time/10000.0)).toFloat() * 0.1f
+        // zoom can't currently be done in ortho mode?
         // Redraw background color
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         // Set the camera position (View matrix)
-        // This is relevant for live-tracking our route
-        Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 3f, 0f, 0f, 0f, 0f, 1.0f, 0.0f)
+        Matrix.setLookAtM(viewMatrix, 0, x, 0.5f + y, 1.1f, x, 0.5f + y, 0f, 0f, 1.0f, 0.0f)
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        Matrix.setRotateM(rotationMatrix, 0, angle, 0f, 0f, -1.0f)
+        Matrix.setRotateM(rotationMatrix, 0, angle*time, 0f, 0f, -1.0f)
 
         // Combine the rotation matrix with the projection and camera view
         // Note that the vPMatrix factor *must be first* in order
         // for the matrix multiplication product to be correct.
         Matrix.multiplyMM(scratch, 0, vPMatrix, 0, rotationMatrix, 0)
         mRoute.draw(scratch)
-
     }
     // vPMatrix is an abbreviation for "Model View Projection Matrix"
     private val vPMatrix = FloatArray(16)
@@ -72,16 +73,26 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
-        Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 7f)
+        // Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 1f, 10f)
+        Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 1f, 10f)
     }
-    fun setRouteCoordinates(coords: FloatArray) {
-        route_coordinates = coords
+    // Called by main activity to send new route information
+    fun <T: Number> setRouteCoordinates(coords: Array<Pair<T, T>>) {
+        val refLat = coords[0].first.toFloat()
+        val refLon = coords[0].second.toFloat()
+        val SCALE = 150
+        // initialize coordinates to their offset from the beginning of the route
+        route_coordinates = coords.flatMap { (a, b) -> listOf((a.toFloat() - refLat) * SCALE, (b.toFloat() - refLon) * SCALE, 0.0f) }.toFloatArray()
         if (::mRoute.isInitialized) {
             mRoute.setVertices(route_coordinates)
         }
         else {
             route_needs_update = true
         }
+    }
+    // Called by main activity to send a new GPS update
+    fun setLocation(coordinate: FloatArray) {
+        user_location = coordinate
     }
 }
 
@@ -162,7 +173,6 @@ class ShapeRenderer {
         }
     }
 }
-
 
 fun loadShader(type: Int, shaderCode: String): Int {
 
