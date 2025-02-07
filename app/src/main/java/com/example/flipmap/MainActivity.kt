@@ -67,6 +67,29 @@ enum class Screen {
     Main,
     Settings
 }
+
+// perhaps better to move this somewhere
+// TODO we can maybe figure out which mapping to use based on model information?
+object KyoceraMappings {
+    const val KEY_LEFT = KeyEvent.KEYCODE_DPAD_LEFT
+    const val KEY_RIGHT = KeyEvent.KEYCODE_DPAD_RIGHT
+    const val KEY_UP = KeyEvent.KEYCODE_DPAD_UP
+    const val KEY_DOWN = KeyEvent.KEYCODE_DPAD_DOWN
+    const val KEY_ENTER = KeyEvent.KEYCODE_DPAD_CENTER
+    const val KEY_SPACE = KeyEvent.KEYCODE_SPACE
+    const val KEY_BACK = KeyEvent.KEYCODE_BACK
+}
+object CatMappings {
+    const val KEY_LEFT = KeyEvent.KEYCODE_DPAD_LEFT
+    const val KEY_RIGHT = KeyEvent.KEYCODE_DPAD_RIGHT
+    const val KEY_UP = KeyEvent.KEYCODE_DPAD_UP
+    const val KEY_DOWN = KeyEvent.KEYCODE_DPAD_DOWN
+    const val KEY_ENTER = KeyEvent.KEYCODE_ENTER
+    const val KEY_BACK = KeyEvent.KEYCODE_BACK
+}
+
+val KEYMAP = KyoceraMappings
+
 const val KEY_APPSELECT = 580
 
 class MainActivity : ComponentActivity() {
@@ -211,23 +234,23 @@ fun SoftKeyNavBar(onSettingsClick: () -> Unit) {
             .focusable(true)
             .onKeyEvent { keyEvent ->
                 when (keyEvent.nativeKeyEvent.keyCode) {
-                    KeyEvent.KEYCODE_DPAD_UP,
-                    KeyEvent.KEYCODE_DPAD_DOWN,
-                    KeyEvent.KEYCODE_DPAD_LEFT,
-                    KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                    KEYMAP.KEY_UP,
+                    KEYMAP.KEY_DOWN,
+                    KEYMAP.KEY_LEFT,
+                    KEYMAP.KEY_RIGHT, -> {
                         if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
                             if (selectedIndex == -1) {
                                 selectedIndex = 0
                             } else {
                                 when (keyEvent.nativeKeyEvent.keyCode) {
-                                    KeyEvent.KEYCODE_DPAD_LEFT -> selectedIndex = (selectedIndex - 1).coerceIn(0, 2)
-                                    KeyEvent.KEYCODE_DPAD_RIGHT -> selectedIndex = (selectedIndex + 1).coerceIn(0, 2)
+                                    KEYMAP.KEY_LEFT -> selectedIndex = (selectedIndex - 1).coerceIn(0, 2)
+                                    KEYMAP.KEY_RIGHT -> selectedIndex = (selectedIndex + 1).coerceIn(0, 2)
                                 }
                             }
                         }
                         true
                     }
-                    KeyEvent.KEYCODE_ENTER -> {
+                    KEYMAP.KEY_ENTER -> {
                         if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
                             if (selectedIndex == 2) {
                                 onSettingsClick()
@@ -235,7 +258,7 @@ fun SoftKeyNavBar(onSettingsClick: () -> Unit) {
                         }
                         true
                     }
-                    KeyEvent.KEYCODE_BACK -> {
+                    KEYMAP.KEY_BACK -> {
                         if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
                             selectedIndex = -1
                         }
