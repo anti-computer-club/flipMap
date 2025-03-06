@@ -1,6 +1,7 @@
 package com.example.flipmap
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -10,6 +11,9 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
+import android.view.Surface
+import android.view.View
+import android.view.WindowManager
 // import android.provider.ContactsContract.CommonDataKinds.Website.URL
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -51,13 +55,18 @@ import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
 import androidx.compose.runtime.rememberCoroutineScope
+import com.example.flipmap.ui.theme.ThemeViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
@@ -98,8 +107,11 @@ object CatMappings {
     const val KEY_RIGHT = KeyEvent.KEYCODE_DPAD_RIGHT
     const val KEY_UP = KeyEvent.KEYCODE_DPAD_UP
     const val KEY_DOWN = KeyEvent.KEYCODE_DPAD_DOWN
-    const val KEY_ENTER = KeyEvent.KEYCODE_ENTER
+    const val KEY_ENTER = 66
     const val KEY_BACK = KeyEvent.KEYCODE_BACK
+    const val SOFT_LEFT = 4
+    const val SOFT_CENTER = 5
+    const val SOFT_RIGHT = 6
 }
 
 val KEYMAP = KyoceraMappings
@@ -109,6 +121,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var locationManager: LocationManager
     private var currentLocation: Location? = null
     var mapView: MyGLSurfaceView? = null
+    val themeViewModel = ThemeViewModel()
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -128,7 +142,7 @@ class MainActivity : ComponentActivity() {
         // Request a string response from the provided URL.
 
         setContent {
-            FlipMapTheme {
+            FlipMapTheme(darkTheme = themeViewModel.isDarkMode.value) {
                 MapApp()
             }
         }
@@ -264,6 +278,7 @@ fun MapApp() {
     var showLocationDialog by remember { mutableStateOf(false) }
     var coordinates by remember { mutableStateOf(STARBUCKS_COORDS) }
     val scope = rememberCoroutineScope()
+    val backgroundColor = MaterialTheme.colorScheme.background
 
     when (activity.currentScreen.value) {
         Screen.Main -> {
@@ -297,6 +312,7 @@ fun MapApp() {
         }
     }
 }
+
 @Composable
 fun SoftKeyNavBar(onSettingsClick: () -> Unit, onEditRouteClick: () -> Unit) {
     var selectedIndex by remember { mutableStateOf(-1) }
@@ -306,6 +322,7 @@ fun SoftKeyNavBar(onSettingsClick: () -> Unit, onEditRouteClick: () -> Unit) {
             .fillMaxWidth()
             .focusable(true)
             .onKeyEvent { keyEvent ->
+                println("Key pressed: ${keyEvent.nativeKeyEvent.keyCode}")
                 when (keyEvent.nativeKeyEvent.keyCode) {
                     KEYMAP.KEY_UP,
                     KEYMAP.KEY_DOWN,
@@ -323,6 +340,24 @@ fun SoftKeyNavBar(onSettingsClick: () -> Unit, onEditRouteClick: () -> Unit) {
                         }
                         true
                     }
+                    KEYMAP.SOFT_LEFT -> {
+                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                            selectedIndex = 0
+                        }
+                        true
+                    }
+                    KEYMAP.SOFT_CENTER -> {
+                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                            selectedIndex = 1
+                        }
+                        true
+                    }
+                    KEYMAP.SOFT_RIGHT -> {
+                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                            selectedIndex = 2
+                        }
+                        true
+                    }
                     KEYMAP.KEY_ENTER -> {
                         if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
                             if (selectedIndex == 2) {
@@ -337,6 +372,7 @@ fun SoftKeyNavBar(onSettingsClick: () -> Unit, onEditRouteClick: () -> Unit) {
                         }
                         true
                     }
+
                     else -> false
                 }
             },
