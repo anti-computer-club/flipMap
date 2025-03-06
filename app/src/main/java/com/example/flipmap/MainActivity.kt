@@ -182,11 +182,12 @@ class MainActivity : ComponentActivity() {
                 val response = client.newCall(request).execute()
 
                 if (response.isSuccessful) {
-                    val jsonResponse = JSONArray(response.body?.string())
+                    val jsonResponse = JSONObject(response.body?.string())
                     Log.d("API_RESPONSE", "Response: $jsonResponse")
-                    Array(jsonResponse.length()) { i ->
-                        val coord = jsonResponse.getJSONArray(i)
-                        Pair(coord.getDouble(0), coord.getDouble(1))
+                    val routeArray = jsonResponse.getJSONArray("route")
+                    Array(routeArray.length()/2) { i ->
+                        val coord = Pair(routeArray[i*2] as Double, routeArray[i*2+1] as Double)
+                        Pair(coord.first, coord.second)
                     }
                 } else null
             } catch (e: Exception) {
