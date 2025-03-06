@@ -20,11 +20,15 @@ const val COORDS_PER_VERTEX = 3
 
 class MyGLRenderer : GLSurfaceView.Renderer {
     private lateinit var mRoute: ShapeRenderer
+    // set in onSurfaceChanged
+    private var ratio = 1f
+    private var zoom = 10f
     private var route_coordinates = FloatArray(0) // TODO make these actual coordinates
     private var route_gl_coordinates = FloatArray(0) // this holds the coordinates, but 0.0-1.0
     private var route_needs_update = true
     private var user_location = FloatArray(3)
     private val rotationMatrix = FloatArray(16)
+    val SCALE = 150
 
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         // Set the background frame color
@@ -41,18 +45,28 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         }
         // Create a rotation transformation for the route
         val scratch = FloatArray(16)
-        val time = SystemClock.uptimeMillis() % 4000L
-        val angle = 0.090f
-        val x = abs(sin(time/20000.0)).toFloat()* 0.1f
-        val y = abs(cos(time/10000.0)).toFloat() * 0.1f
         // zoom can't currently be done in ortho mode?
         // Redraw background color
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         // Set the camera position (View matrix)
-        Matrix.setLookAtM(viewMatrix, 0, x, 0.5f + y, 1.1f, x, 0.5f + y, 0f, 0f, 1.0f, 0.0f)
+        Matrix.setLookAtM(
+            viewMatrix, 0,
+            user_location[1] * SCALE, user_location[0] * SCALE, 1f,
+            user_location[1] * SCALE, user_location[0] * SCALE, 0f,
+            0f, 1f, 0f
+        )
+        // Matrix.setLookAtM(
+        //     viewMatrix, 0,
+        //     route_coordinates[0] , route_coordinates[1], 4f,
+        //     route_coordinates[0] , route_coordinates[1] , 0f,
+        //     0f, 1f, 0f
+        // )
+
+        Matrix.orthoM(projectionMatrix, 0, -ratio*zoom, ratio*zoom, -zoom, zoom, 1f, 1000f)
+
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        Matrix.setRotateM(rotationMatrix, 0, angle*time, 0f, 0f, -1.0f)
+        Matrix.setRotateM(rotationMatrix, 0, 0f, 0f, 0f, -1.0f)
 
         // Combine the rotation matrix with the projection and camera view
         // Note that the vPMatrix factor *must be first* in order
@@ -69,20 +83,19 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {
         GLES20.glViewport(0, 0, width, height)
 
-        val ratio: Float = width.toFloat() / height.toFloat()
+        ratio = width.toFloat() / height.toFloat()
 
         // this projection matrix is applied to object coordinates
         // in the onDrawFrame() method
         // Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 1f, 10f)
-        Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 1f, 10f)
+        Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -10f, 10f, 1f, 1000f)
     }
     // Called by main activity to send new route information
     fun <T: Number> setRouteCoordinates(coords: Array<Pair<T, T>>) {
         val refLat = coords[0].first.toFloat()
         val refLon = coords[0].second.toFloat()
-        val SCALE = 150
         // initialize coordinates to their offset from the beginning of the route
-        route_coordinates = coords.flatMap { (a, b) -> listOf((a.toFloat() - refLat) * SCALE, (b.toFloat() - refLon) * SCALE, 0.0f) }.toFloatArray()
+        route_coordinates = coords.flatMap { (a, b) -> listOf(a.toFloat() * SCALE, b.toFloat() * SCALE, 0.0f) }.toFloatArray()
         if (::mRoute.isInitialized) {
             mRoute.setVertices(route_coordinates)
         }
