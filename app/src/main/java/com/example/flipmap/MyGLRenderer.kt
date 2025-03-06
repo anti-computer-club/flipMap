@@ -20,8 +20,9 @@ const val COORDS_PER_VERTEX = 3
 
 class MyGLRenderer : GLSurfaceView.Renderer {
     private lateinit var mRoute: ShapeRenderer
-    // this gets set in onSurfaceChanged
-    private var ratio: Float = 1f
+    // set in onSurfaceChanged
+    private var ratio = 1f
+    private var zoom = 10f
     private var route_coordinates = FloatArray(0) // TODO make these actual coordinates
     private var route_gl_coordinates = FloatArray(0) // this holds the coordinates, but 0.0-1.0
     private var route_needs_update = true
@@ -48,9 +49,6 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // Redraw background color
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         // Set the camera position (View matrix)
-        Log.d("Debug", "route len: ${(route_coordinates.size)}")
-        Log.d("Debug", "route coords: ${route_coordinates[0]}, ${route_coordinates[1]}")
-        Log.d("Debug", "scaled coordinates: ${user_location[1] * SCALE}, ${user_location[0] * SCALE}")
         Matrix.setLookAtM(
             viewMatrix, 0,
             user_location[1] * SCALE, user_location[0] * SCALE, 1f,
@@ -64,7 +62,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         //     0f, 1f, 0f
         // )
 
-        Matrix.orthoM(projectionMatrix, 0, -ratio, ratio, -10f, 10f, 1f, 1000f)
+        Matrix.orthoM(projectionMatrix, 0, -ratio*zoom, ratio*zoom, -zoom, zoom, 1f, 1000f)
 
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
