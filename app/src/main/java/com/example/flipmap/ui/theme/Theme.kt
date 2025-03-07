@@ -34,12 +34,23 @@ private val LightColorScheme = lightColorScheme(
     surface = Color.White,
     onBackground = Color.Black,
     onSurface = Color.Black
+
+    
+    /* Other default colors to override
+    background = Color(0xFFFFFBFE),
+    surface = Color(0xFFFFFBFE),
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onTertiary = Color.White,
+    onBackground = Color(0xFF1C1B1F),
+    onSurface = Color(0xFF1C1B1F),
+    */
 )
 
 @Composable
 fun FlipMapTheme(
     darkTheme: Boolean = true,
-    dynamicColor: Boolean = false, // Set to false to use our custom colors
+    dynamicColor: Boolean = false, 
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -50,8 +61,6 @@ fun FlipMapTheme(
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
-
-    // Update the system bars to match the theme
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
