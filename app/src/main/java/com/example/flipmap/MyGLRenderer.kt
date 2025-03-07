@@ -22,7 +22,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     private lateinit var mRoute: ShapeRenderer
     // set in onSurfaceChanged
     private var ratio = 1f
-    private var zoom = 10f
+    private var zoom = 5f
     private var route_coordinates = FloatArray(0) // TODO make these actual coordinates
     private var route_gl_coordinates = FloatArray(0) // this holds the coordinates, but 0.0-1.0
     private var route_needs_update = true
@@ -133,7 +133,7 @@ class ShapeRenderer {
     private var vertexCount: Int = 0
     private var vertexStride: Int = 0
 
-    val color = floatArrayOf(0.63671875f, 0.76953125f, 0.22265625f, 1.0f)
+    val color = floatArrayOf(0.63671875f, 0.26953125f, 0.72265625f, 1.0f)
 
     init {
         val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
