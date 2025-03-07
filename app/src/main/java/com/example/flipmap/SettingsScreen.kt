@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,66 +27,72 @@ fun SettingsScreen(onBackClick: () -> Unit) {
     val unselectedLightPurple = Color(0xFFF3EAFB)
     val unselectedDarkPurple = Color(0xFF3D2F47)
 
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(
-                text = "Settings",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "Settings",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
 
-        Row (
-            modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
                     .padding(horizontal = 32.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Text(
-                text = "Light Mode",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isDarkMode) Color.White else Color.Black,
-                modifier = Modifier
-                    .background(
-                        color = if (!isDarkMode) selectedPurple else if (isDarkMode) unselectedDarkPurple else unselectedLightPurple,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .clickable { activity.themeViewModel.toggleTheme(false) }
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
-            )
-            Text(
-                text = "Dark Mode",
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isDarkMode) Color.White else Color.Black,
-                modifier = Modifier
-                    .background(
-                        color = if (isDarkMode) selectedPurple else if (!isDarkMode) unselectedLightPurple else unselectedDarkPurple,
-                        shape = RoundedCornerShape(8.dp)
-                    )
-                    .clickable { activity.themeViewModel.toggleTheme(true) }
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
-            )
-        }
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Text(
+                    text = "Light Mode",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isDarkMode) Color.White else Color.Black,
+                    modifier = Modifier
+                        .background(
+                            color = if (!isDarkMode) selectedPurple else if (isDarkMode) unselectedDarkPurple else unselectedLightPurple,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .clickable { activity.themeViewModel.toggleTheme(false) }
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
+                )
+                Text(
+                    text = "Dark Mode",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isDarkMode) Color.White else Color.Black,
+                    modifier = Modifier
+                        .background(
+                            color = if (isDarkMode) selectedPurple else if (!isDarkMode) unselectedLightPurple else unselectedDarkPurple,
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .clickable { activity.themeViewModel.toggleTheme(true) }
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.weight(1f))
+            Spacer(modifier = Modifier.weight(1f))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
-        ) {
-            Text(
-                text = "Back",
-                modifier = Modifier
-                    .padding(8.dp)
-                    .clickable { onBackClick() },
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start
+            ) {
+                Text(
+                    text = "Back",
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable { onBackClick() },
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }
