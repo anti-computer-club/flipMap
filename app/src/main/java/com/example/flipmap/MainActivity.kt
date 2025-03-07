@@ -173,7 +173,7 @@ class MainActivity : ComponentActivity() {
 
     }
 
-    // HTTP POST request to API endpoint (https://api.anti-computer.club/route)
+    // HTTP POST request to API endpoint (https://api.anticomputer.club/route)
     // returns coordinate pair array
     suspend fun getRouteFromApi(query:String): Array<Pair<Double, Double>>? {
         val currentLoc = currentLocation ?: return null
@@ -301,95 +301,100 @@ fun MapApp() {
 
 @Composable
 fun SoftKeyNavBar(onSettingsClick: () -> Unit, onEditRouteClick: () -> Unit) {
-    var selectedIndex by remember { mutableStateOf(-1) }
+    Surface(
+        color = MaterialTheme.colorScheme.background
+    ) {
+        var selectedIndex by remember { mutableStateOf(-1) }
 
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .focusable(true)
-            .onKeyEvent { keyEvent ->
-                println("Key pressed: ${keyEvent.nativeKeyEvent.keyCode}")
-                when (keyEvent.nativeKeyEvent.keyCode) {
-                    KEYMAP.KEY_UP,
-                    KEYMAP.KEY_DOWN,
-                    KEYMAP.KEY_LEFT,
-                    KEYMAP.KEY_RIGHT, -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            if (selectedIndex == -1) {
-                                selectedIndex = 0
-                            } else {
-                                when (keyEvent.nativeKeyEvent.keyCode) {
-                                    KEYMAP.KEY_LEFT -> selectedIndex = (selectedIndex - 1).coerceIn(0, 2)
-                                    KEYMAP.KEY_RIGHT -> selectedIndex = (selectedIndex + 1).coerceIn(0, 2)
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .focusable(true)
+                .onKeyEvent { keyEvent ->
+                    println("Key pressed: ${keyEvent.nativeKeyEvent.keyCode}")
+                    when (keyEvent.nativeKeyEvent.keyCode) {
+                        KEYMAP.KEY_UP,
+                        KEYMAP.KEY_DOWN,
+                        KEYMAP.KEY_LEFT,
+                        KEYMAP.KEY_RIGHT, -> {
+                            if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                                if (selectedIndex == -1) {
+                                    selectedIndex = 0
+                                } else {
+                                    when (keyEvent.nativeKeyEvent.keyCode) {
+                                        KEYMAP.KEY_LEFT -> selectedIndex = (selectedIndex - 1).coerceIn(0, 2)
+                                        KEYMAP.KEY_RIGHT -> selectedIndex = (selectedIndex + 1).coerceIn(0, 2)
+                                    }
                                 }
                             }
+                            true
                         }
-                        true
-                    }
-                    KEYMAP.SOFT_LEFT -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            selectedIndex = 0
-                        }
-                        true
-                    }
-                    KEYMAP.SOFT_CENTER -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            selectedIndex = 1
-                        }
-                        true
-                    }
-                    KEYMAP.SOFT_RIGHT -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            selectedIndex = 2
-                        }
-                        true
-                    }
-                    KEYMAP.KEY_ENTER -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            if (selectedIndex == 2) {
-                                onSettingsClick()
+                        KEYMAP.SOFT_LEFT -> {
+                            if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                                selectedIndex = 0
                             }
+                            true
                         }
-                        true
-                    }
-                    KEYMAP.KEY_BACK -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            selectedIndex = -1
+                        KEYMAP.SOFT_CENTER -> {
+                            if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                                selectedIndex = 1
+                            }
+                            true
                         }
-                        true
-                    }
+                        KEYMAP.SOFT_RIGHT -> {
+                            if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                                selectedIndex = 2
+                            }
+                            true
+                        }
+                        KEYMAP.KEY_ENTER -> {
+                            if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                                if (selectedIndex == 2) {
+                                    onSettingsClick()
+                                }
+                            }
+                            true
+                        }
+                        KEYMAP.KEY_BACK -> {
+                            if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
+                                selectedIndex = -1
+                            }
+                            true
+                        }
 
-                    else -> false
-                }
-            },
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        val items = listOf("Edit Route", "Go", "Settings")
-
-        items.forEachIndexed { index, text ->
-            Text(
-                text = text,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .clickable {
-                        when (text){
-                            "Edit Route" -> onEditRouteClick()
-                            "Settings" -> onSettingsClick()
-                        }
-                    },
-                color = if (selectedIndex == index) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
+                        else -> false
+                    }
                 },
-                fontWeight = if (selectedIndex == index) {
-                    FontWeight.Bold
-                } else {
-                    FontWeight.Normal
-                }
-            )
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            val items = listOf("Edit Route", "Go", "Settings")
+
+            items.forEachIndexed { index, text ->
+                Text(
+                    text = text,
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .clickable {
+                            when (text){
+                                "Edit Route" -> onEditRouteClick()
+                                "Settings" -> onSettingsClick()
+                            }
+                        },
+                    color = if (selectedIndex == index) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                    fontWeight = if (selectedIndex == index) {
+                        FontWeight.Bold
+                    } else {
+                        FontWeight.Normal
+                    }
+                )
+            }
         }
     }
+
 }
 
 
