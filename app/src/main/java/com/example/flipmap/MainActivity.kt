@@ -166,7 +166,7 @@ class MainActivity : ComponentActivity() {
         // osmMapView = map
         currentLocation?.let { location ->
             val geoPoint = GeoPoint(location.latitude, location.longitude)
-            //map.controller.setCenter(geoPoint)
+            map.controller.setCenter(geoPoint)
 
         }
     }
