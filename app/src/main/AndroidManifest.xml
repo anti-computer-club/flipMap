@@ -21,10 +21,6 @@
         android:theme="@style/Theme.FlipMap"
         android:usesCleartextTraffic="true"
         tools:targetApi="29">
-        <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAuzFdGD87DtsdNy1Wv375ZGrgBykU9MuM"
-            />
 
         <service
             android:name=".LocationService"
