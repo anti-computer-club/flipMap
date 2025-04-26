@@ -4,6 +4,7 @@ import android.preference.PreferenceManager
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
@@ -67,6 +68,6 @@ fun OpenStreetMapView(
     // render the view
     AndroidView(
         factory = { mapView },
-        modifier = modifier.fillMaxSize()
+        modifier = modifier.clipToBounds()
     )
 }

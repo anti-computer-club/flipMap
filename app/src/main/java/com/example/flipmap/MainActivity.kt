@@ -1,6 +1,7 @@
 package com.example.flipmap
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
@@ -42,6 +43,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 // import com.android.volley.toolbox.Volley
 import com.example.flipmap.ui.theme.FlipMapTheme
 import androidx.compose.foundation.clickable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.preference.PreferenceManager
 import com.example.flipmap.ui.theme.ThemeViewModel
@@ -63,7 +65,8 @@ import org.osmdroid.views.overlay.Polyline
 
 enum class Screen {
     Main,
-    Settings
+    Settings,
+    RouteSelect
 }
 
 val STARBUCKS_COORDS : Array<Pair<Double, Double>> = arrayOf(
@@ -113,7 +116,7 @@ class MainActivity : ComponentActivity() {
         )
 
         // Make top bar transparent
-        enableEdgeToEdge()
+        // enableEdgeToEdge()
 
         // Hide bottom system navbar
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
@@ -132,7 +135,43 @@ class MainActivity : ComponentActivity() {
             FlipMapTheme(darkTheme = themeViewModel.isDarkMode.value) {
                 // Choose which map implementation to use
                 if (currentScreen.value == Screen.Main) {
-                    Column(Modifier.fillMaxSize()) {
+                    Column(Modifier.clipToBounds()) {
+                        // Use OSM Map
+                        OpenStreetMapView(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            // hello chatgpt. please make this the user's first seen coordinates instead
+                            coordinates = currentLocation?.let { loc ->
+                                GeoPoint(loc.latitude, loc.longitude)
+                            } ?: GeoPoint(35.0116, 135.7681),
+
+                            onMapReady = { map -> onOsmMapReady(map) }
+                        )
+
+                        SoftKeyNavBar(
+                            "Edit Route", "Recenter", "Show Controls"
+                        )
+                    }
+                } else if (currentScreen.value == Screen.Settings) {
+                    SettingsScreen(onBackClick = { currentScreen.value = Screen.Main })
+                }
+                else if (currentScreen.value == Screen.RouteSelect) {
+                    Column(Modifier.clipToBounds()) {
+                        LegacyTextField("test", { }) { query ->
+                            currentLocation?.let { location ->
+                                Log.d("ugh", location.toString())
+                                Log.d("ugh", query.toString())
+                                // Launch async operation using LaunchedEffect
+                                // LaunchedEffect(query) {
+                                //     val destinations = getDestinations(
+                                //         location.latitude, location.longitude, query
+                                //     )
+                                //     // Do something with destinations here (e.g., update state)
+                                //     Log.d("Destinations", destinations.toString())
+                                // }
+                            }
+                        }
                         // Use OSM Map
                         OpenStreetMapView(
                             modifier = Modifier
@@ -143,8 +182,8 @@ class MainActivity : ComponentActivity() {
                         )
 
                         SoftKeyNavBar(
-                            onSettingsClick = { currentScreen.value = Screen.Settings }
-                        ) { /* Show location dialog */ }
+                            "Edit Route", "Recenter", "Show Controls"
+                        )
                     }
                 } else if (currentScreen.value == Screen.Settings) {
                     SettingsScreen(onBackClick = { currentScreen.value = Screen.Main })
@@ -157,22 +196,13 @@ class MainActivity : ComponentActivity() {
             val geoPoint = GeoPoint(location.latitude, location.longitude)
             map.controller.setCenter(geoPoint)
         }
-        setRouteCoordinates(map)
-        Log.d("paul", "called setRouteCoordinates")
     }
-    fun setRouteCoordinates(map: org.osmdroid.views.MapView) {
-        val geoPoints = STARBUCKS_COORDS
-            .map { (lat, lon) -> GeoPoint(lon, lat) }
-            .let { ArrayList(it) }
-        //add your points here
-        val line = Polyline();   //see note below!
-        line.setPoints(geoPoints);
-        // line.setOnClickListener(new Polyline.OnClickListener() {
-        //     Toast.makeText(mapView.context, "polyline with " + line.actualPoints.size + " pts was tapped", Toast.LENGTH_LONG).show()
-        //     return false
-        // }
-        map.overlays.add(line);
-        map.invalidate();
+    fun setRouteCoordinates(map: org.osmdroid.views.MapView, geoPoints: List<GeoPoint>) {
+        val line = Polyline()
+        line.setPoints(geoPoints)
+        map.overlays.clear() // optional, clears old lines
+        map.overlays.add(line)
+        map.invalidate()
         Log.d("paul", "did da stuff")
     }
 
@@ -203,59 +233,8 @@ class MainActivity : ComponentActivity() {
 
     // HTTP POST request to API endpoint (https://api.anti-computer.club/route)
     // returns coordinate pair array
-    suspend fun getRouteFromApi(query: String): Array<Pair<Double, Double>>? {
-        val currentLoc = currentLocation ?: return null
 
-        // create a JSON object
-        val json = JSONObject().apply {
-            put("lat", currentLoc.latitude)
-            put("lon", currentLoc.longitude)
-            put("query", query)
-        }
-
-        // use withContext for long-running tasks
-        return withContext(Dispatchers.IO) {
-            try {
-                // create HTTP client instance
-                val client = OkHttpClient()
-
-                // convert into req body
-                val requestBody = json.toString().toRequestBody("application/json".toMediaType())
-
-                // build POST request with API URL and JSON req body
-                val request = Request.Builder()
-                    .url("https://api.anticomputer.club/route")
-                    .post(requestBody)
-                    .build()
-
-                val response = client.newCall(request).execute()
-
-                if (response.isSuccessful) {
-                    val jsonResponse = JSONObject(response.body?.string())
-                    Log.d("API_RESPONSE", "Response: $jsonResponse")
-
-                    val routeArray = jsonResponse.getJSONArray("route")
-                    Array(routeArray.length()/2) { i ->
-                        try {
-                            val lat = routeArray.getDouble(i*2)
-                            val lon = routeArray.getDouble(i*2+1)
-                            Pair(lat, lon)
-                        } catch (e: Exception) {
-                            Log.e("API_ERROR", "Error parsing coordinate at index ${i*2}", e)
-                            Pair(0.0, 0.0) // Fallback
-                        }
-                    }
-                } else {
-                    Log.e("API_ERROR", "Response not successful: ${response.code}")
-                    null
-                }
-            } catch (e: Exception) {
-                Log.e("API_ERROR", "Exception during API call", e)
-                e.printStackTrace()
-                null
-            }
-        }
-    }
+    // TODO check if can be removed
     private fun startLocationUpdates() {
         if (ActivityCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
@@ -290,110 +269,28 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // TODO remove along with startLocationUpdates
     fun getLastLocation(): String {
         return currentLocation?.toString() ?: "location not available"
     }
-}
 
-@Composable
-fun SoftKeyNavBar(onSettingsClick: () -> Unit, onEditRouteClick: () -> Unit) {
-    var selectedIndex by remember { mutableStateOf(-1) }
-
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .focusable(true)
-            .onKeyEvent { keyEvent ->
-                // TODO make this a str lol
-                // Log.d("Key pressed", keyEvent.nativeKeyEvent.keyCode)
-                when (keyEvent.nativeKeyEvent.keyCode) {
-                    KEYMAP.KEY_UP,
-                    KEYMAP.KEY_DOWN,
-                    KEYMAP.KEY_LEFT,
-                    KEYMAP.KEY_RIGHT,
-                    -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            if (selectedIndex == -1) {
-                                selectedIndex = 0
-                            } else {
-                                when (keyEvent.nativeKeyEvent.keyCode) {
-                                    KEYMAP.KEY_LEFT -> selectedIndex =
-                                        (selectedIndex - 1).coerceIn(0, 2)
-
-                                    KEYMAP.KEY_RIGHT -> selectedIndex =
-                                        (selectedIndex + 1).coerceIn(0, 2)
-                                }
-                            }
-                        }
-                        true
-                    }
-
-                    KEYMAP.SOFT_LEFT -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            selectedIndex = 0
-                        }
-                        true
-                    }
-
-                    KEYMAP.SOFT_CENTER -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            selectedIndex = 1
-                        }
-                        true
-                    }
-
-                    KEYMAP.SOFT_RIGHT -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            selectedIndex = 2
-                        }
-                        true
-                    }
-
-                    KEYMAP.KEY_ENTER -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            if (selectedIndex == 2) {
-                                onSettingsClick()
-                            }
-                        }
-                        true
-                    }
-
-                    KEYMAP.KEY_BACK -> {
-                        if (keyEvent.nativeKeyEvent.action == KeyEvent.ACTION_DOWN) {
-                            selectedIndex = -1
-                        }
-                        true
-                    }
-
-                    else -> false
+    @SuppressLint("RestrictedApi")
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            when (event.keyCode) {
+                KEYMAP.SOFT_LEFT -> {
+                    currentScreen.value = Screen.RouteSelect
+                    return true
                 }
-            },
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        val items = listOf("Edit Route", "Go", "Settings")
-
-        items.forEachIndexed { index, text ->
-            Text(
-                text = text,
-                modifier = Modifier
-                    .padding(8.dp)
-                    .clickable {
-                        when (text) {
-                            "Edit Route" -> onEditRouteClick()
-                            "Settings" -> onSettingsClick()
-                        }
-                    },
-                color = if (selectedIndex == index) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurface
-                },
-                fontWeight = if (selectedIndex == index) {
-                    FontWeight.Bold
-                } else {
-                    FontWeight.Normal
+                KEYMAP.SOFT_CENTER -> {
+                    return true
                 }
-            )
+                KEYMAP.SOFT_RIGHT -> {
+                    currentScreen.value = Screen.Settings
+                    return true
+                }
+            }
         }
+        return super.dispatchKeyEvent(event)
     }
 }
