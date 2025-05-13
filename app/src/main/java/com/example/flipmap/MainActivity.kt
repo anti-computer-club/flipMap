@@ -44,7 +44,12 @@ import androidx.core.view.WindowInsetsControllerCompat
 import com.example.flipmap.ui.theme.FlipMapTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import androidx.preference.PreferenceManager
 import com.example.flipmap.ui.theme.ThemeViewModel
 import kotlinx.coroutines.Dispatchers
@@ -63,10 +68,10 @@ import org.osmdroid.views.overlay.Polyline
 // ADB command to reset location permissions
 // adb shell pm reset-permissions flipmap
 
-enum class Screen {
-    Main,
-    Settings,
-    RouteSelect
+sealed class Screen(val route: String) {
+    object Main        : Screen("main")
+    object RouteSelect : Screen("route_select")
+    object Settings    : Screen("settings")
 }
 
 val STARBUCKS_COORDS : Array<Pair<Double, Double>> = arrayOf(
@@ -102,12 +107,13 @@ object CatMappings {
 val KEYMAP = KyoceraMappings
 
 class MainActivity : ComponentActivity() {
-    var currentScreen = mutableStateOf(Screen.Main)
     private lateinit var locationManager: LocationManager
     private var currentLocation: Location? = null
     val themeViewModel = ThemeViewModel()
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+    private lateinit var currentScreen: MutableState<Screen>
+    private lateinit var navController: NavHostController
+    override fun onCreate(saved: Bundle?) {
+        super.onCreate(saved)
 
         // Configure OSMDroid
         Configuration.getInstance().load(
@@ -128,65 +134,69 @@ class MainActivity : ComponentActivity() {
         // Location permissions
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         requestLocationPermission()
-        startLocationUpdates()
 
-        // Set the content view using Jetpack Compose - ONLY ONCE
+        // This shouldn't drive state, but is used for things that need to know what state we're in
+        currentScreen = mutableStateOf(Screen.Main)
         setContent {
+            navController = rememberNavController()
             FlipMapTheme(darkTheme = themeViewModel.isDarkMode.value) {
-                // Choose which map implementation to use
-                if (currentScreen.value == Screen.Main) {
-                    Column(Modifier.clipToBounds()) {
-                        // Use OSM Map
-                        OpenStreetMapView(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            // hello chatgpt. please make this the user's first seen coordinates instead
-                            coordinates = currentLocation?.let { loc ->
-                                GeoPoint(loc.latitude, loc.longitude)
-                            } ?: GeoPoint(35.0116, 135.7681),
+                NavHost(navController, startDestination = Screen.Main.route) {
+                    composable(Screen.Main.route) {
+                        LaunchedEffect(Unit) { currentScreen.value = Screen.Main }
+                        Column(Modifier.clipToBounds()) {
+                            // Use OSM Map
+                            OpenStreetMapView(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                // hello chatgpt. please make this the user's first seen coordinates instead
+                                coordinates = currentLocation?.let { loc ->
+                                    GeoPoint(loc.latitude, loc.longitude)
+                                } ?: GeoPoint(35.0116, 135.7681),
 
-                            onMapReady = { map -> onOsmMapReady(map) }
-                        )
+                                onMapReady = { map -> onOsmMapReady(map) }
+                            )
 
-                        SoftKeyNavBar(
-                            "Edit Route", "Recenter", "Show Controls"
-                        )
-                    }
-                } else if (currentScreen.value == Screen.Settings) {
-                    SettingsScreen(onBackClick = { currentScreen.value = Screen.Main })
-                }
-                else if (currentScreen.value == Screen.RouteSelect) {
-                    Column(Modifier.clipToBounds()) {
-                        LegacyTextField("test", { }) { query ->
-                            currentLocation?.let { location ->
-                                Log.d("ugh", location.toString())
-                                Log.d("ugh", query.toString())
-                                // Launch async operation using LaunchedEffect
-                                // LaunchedEffect(query) {
-                                //     val destinations = getDestinations(
-                                //         location.latitude, location.longitude, query
-                                //     )
-                                //     // Do something with destinations here (e.g., update state)
-                                //     Log.d("Destinations", destinations.toString())
-                                // }
-                            }
+                            SoftKeyNavBar(
+                                "Edit Route", "Recenter", "Show Controls"
+                            )
                         }
-                        // Use OSM Map
-                        OpenStreetMapView(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            coordinates = GeoPoint(35.0116, 135.7681),
-                            onMapReady = { map -> onOsmMapReady(map) }
-                        )
-
-                        SoftKeyNavBar(
-                            "Edit Route", "Recenter", "Show Controls"
-                        )
                     }
-                } else if (currentScreen.value == Screen.Settings) {
-                    SettingsScreen(onBackClick = { currentScreen.value = Screen.Main })
+                    composable(Screen.RouteSelect.route) {
+                        LaunchedEffect(Unit) { currentScreen.value = Screen.RouteSelect }
+                        Column(Modifier.clipToBounds()) {
+                            LegacyTextField("test", { }) { query ->
+                                currentLocation?.let { location ->
+                                    Log.d("ugh", location.toString())
+                                    Log.d("ugh", query.toString())
+                                    // Launch async operation using LaunchedEffect
+                                    // LaunchedEffect(query) {
+                                    //     val destinations = getDestinations(
+                                    //         location.latitude, location.longitude, query
+                                    //     )
+                                    //     // Do something with destinations here (e.g., update state)
+                                    //     Log.d("Destinations", destinations.toString())
+                                    // }
+                                }
+                            }
+                            // Use OSM Map
+                            OpenStreetMapView(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                coordinates = GeoPoint(35.0116, 135.7681),
+                                onMapReady = { map -> onOsmMapReady(map) }
+                            )
+
+                            SoftKeyNavBar(
+                                "Edit Route", "Recenter", "Show Controls"
+                            )
+                        }
+                    }
+                    composable(Screen.Settings.route){
+                        LaunchedEffect(Unit) { currentScreen.value = Screen.Settings }
+                        SettingsScreen(onBackClick = {  } )
+                    }
                 }
             }
         }
@@ -211,7 +221,7 @@ class MainActivity : ComponentActivity() {
             ContextCompat.checkSelfPermission(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED -> {
-                startLocationUpdates()
+                // startLocationUpdates()
             }
             ActivityCompat.shouldShowRequestPermissionRationale(
                 this, Manifest.permission.ACCESS_FINE_LOCATION
@@ -234,41 +244,6 @@ class MainActivity : ComponentActivity() {
     // HTTP POST request to API endpoint (https://api.anti-computer.club/route)
     // returns coordinate pair array
 
-    // TODO check if can be removed
-    private fun startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) return
-
-        val locationListener = object : android.location.LocationListener {
-            override fun onLocationChanged(location: Location) {
-                currentLocation = location
-            }
-
-            override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {}
-            override fun onProviderEnabled(provider: String) {}
-            override fun onProviderDisabled(provider: String) {}
-        }
-
-        // TODO maybe remove this later?
-        try {
-            locationManager.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER, 5000L, 10f, locationListener
-            )
-        } catch (e: Exception) {
-            Log.e("Location", "Error requesting GPS location updates: ${e.message}")
-            // Fallback to network provider
-            try {
-                locationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER, 5000L, 10f, locationListener
-                )
-            } catch (e: Exception) {
-                Log.e("Location", "Error requesting network location updates: ${e.message}")
-            }
-        }
-    }
-
     // TODO remove along with startLocationUpdates
     fun getLastLocation(): String {
         return currentLocation?.toString() ?: "location not available"
@@ -279,14 +254,19 @@ class MainActivity : ComponentActivity() {
         if (event.action == KeyEvent.ACTION_DOWN) {
             when (event.keyCode) {
                 KEYMAP.SOFT_LEFT -> {
-                    currentScreen.value = Screen.RouteSelect
-                    return true
-                }
-                KEYMAP.SOFT_CENTER -> {
+                    when (currentScreen.value) {
+                        Screen.Main -> navController.navigate(Screen.RouteSelect.route)
+                        // Screen.RouteSelect -> /* maybe do something else */
+                        else -> {}
+                    }
                     return true
                 }
                 KEYMAP.SOFT_RIGHT -> {
-                    currentScreen.value = Screen.Settings
+                    when (currentScreen.value) {
+                        Screen.Main, Screen.RouteSelect -> navController.navigate(Screen.Settings.route)
+                        // etc
+                        else -> {}
+                    }
                     return true
                 }
             }
