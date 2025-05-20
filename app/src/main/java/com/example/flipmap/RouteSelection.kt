@@ -37,7 +37,6 @@ import kotlinx.coroutines.delay
 @Composable
 fun LegacyTextField(
     text: String,
-    onTextUpdate: (String) -> Unit,
     onTextSubmission: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -60,7 +59,8 @@ fun LegacyTextField(
                         Log.d("paul rocks", keyCode.toString())
 
                         // Trigger the callback on submission
-                        onTextSubmission(text)
+                        // val destinations = getDestinations(123.0, 45.0, text.toString())
+                        onTextSubmission(this.text.toString()) // this is returning the passed parameter, not the current text
 
                         // Clear focus and hide keyboard
                         clearFocus()
