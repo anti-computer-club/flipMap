@@ -7,6 +7,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 
 suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, dest_lon: Double)
@@ -63,11 +64,12 @@ suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, 
     }
 }
 
-suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): Array<Pair<Double, Double>>? {
+suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): JSONArray? {
     val json = JSONObject().apply {
         put("lat", src_lat)
         put("lon", src_lon)
         put("query", query)
+        put("amount", 3)
     }
 
     return withContext(Dispatchers.IO) {
@@ -79,16 +81,15 @@ suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): Ar
                 .post(requestBody)
                 .build()
 
+            Log.d("API_DEBUG", "Sending JSON: ${json.toString()}")
             val response = client.newCall(request).execute()
 
             if (response.isSuccessful) {
                 val jsonResponse = JSONObject(response.body?.string())
                 Log.d("API_RESPONSE", "Response: $jsonResponse")
 
-                val routeArray = jsonResponse.getJSONArray("route")
-                Array(routeArray.length() / 2) { i ->
-                    Pair(routeArray.getDouble(i * 2), routeArray.getDouble(i * 2 + 1))
-                }
+                val routeArray = jsonResponse.getJSONArray("results")
+                routeArray
             } else {
                 Log.e("API_ERROR", "Response not successful: ${response.code}")
                 null
