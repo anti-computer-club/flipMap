@@ -16,12 +16,15 @@ import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.layout.onSizeChanged
 
 @Composable
 fun OpenStreetMapView(
     modifier: Modifier = Modifier,
     coordinates: GeoPoint,
-    onMapReady: (MapView) -> Unit = {}
+    onMapReady: (MapView) -> Unit = {},
+    onSizeChanged: (IntSize) -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -57,17 +60,14 @@ fun OpenStreetMapView(
 
     // setup location overlay once
     LaunchedEffect(Unit) {
-        val myLocationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(context), mapView).apply {
-            enableMyLocation()
-            enableFollowLocation()
-        }
-        mapView.overlays.add(myLocationOverlay)
         onMapReady(mapView)
     }
 
     // render the view
     AndroidView(
         factory = { mapView },
-        modifier = modifier.clipToBounds()
+        modifier = modifier
+            .clipToBounds()
+            .onSizeChanged { size -> onSizeChanged(size) }
     )
 }

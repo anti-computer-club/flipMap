@@ -82,6 +82,6 @@ fun LegacyTextField(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
-            .padding(8.dp)
+            .padding(2.dp)
     )
 }
