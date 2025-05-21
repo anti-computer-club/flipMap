@@ -43,6 +43,8 @@ import androidx.core.view.WindowInsetsControllerCompat
 // import com.android.volley.toolbox.Volley
 import com.example.flipmap.ui.theme.FlipMapTheme
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.rememberCoroutineScope
@@ -136,61 +138,60 @@ class MainActivity : ComponentActivity() {
         setContent {
             navController = rememberNavController()
             FlipMapTheme(darkTheme = themeViewModel.isDarkMode.value) {
-                NavHost(navController, startDestination = Screen.Main.route) {
-                    composable(Screen.Main.route) {
-                        LaunchedEffect(Unit) { currentScreen.value = Screen.Main }
-                        Column(Modifier.clipToBounds()) {
-                            // Use OSM Map
-                            OpenStreetMapView(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                coordinates = currentLocation?.let { loc ->
-                                    GeoPoint(loc.latitude, loc.longitude)
-                                } ?: GeoPoint(35.0116, 135.7681),
+                Box(Modifier.fillMaxSize()) {
+                    // persistent map view
+                    val mapState = remember { mutableStateOf<org.osmdroid.views.MapView?>(null) } // hold map if u need to interact
 
-                                onMapReady = { map -> onOsmMapReady(map) }
-                            )
-
-                            SoftKeyNavBar(
-                                "Edit Route", "Recenter", "Show Controls"
-                            )
+                    OpenStreetMapView(
+                        modifier = Modifier.fillMaxSize(),
+                        coordinates = GeoPoint(35.0116, 135.7681), // initial location
+                        onMapReady = {
+                                map -> mapState.value = map
+                            onOsmMapReady(map)
                         }
-                    }
-                    composable(Screen.RouteSelect.route) {
-                        val scope = rememberCoroutineScope()
-                        LaunchedEffect(Unit) { currentScreen.value = Screen.RouteSelect }
-                        Column(Modifier.clipToBounds()) {
-                            LegacyTextField("") { query ->
-                                scope.launch {
-                                    // Log.d("ugh", location.toString())
-                                    // Log.d("ugh", query)
+                    )
 
-                                    val destinations = getDestinations(45.5, -123.3, query)
-                                    Log.d("ugh", destinations.toString())
-                                    // or do whatever w/ destinations
-                                }
+                    // ui overlaying the map
+                    NavHost(navController, startDestination = Screen.Main.route, modifier = Modifier.fillMaxSize()) {
+                        composable(Screen.Main.route) {
+                            LaunchedEffect(Unit) { currentScreen.value = Screen.Main }
+                            Column(
+                                Modifier
+                                    .fillMaxSize()
+                                    .clipToBounds()
+                            ) {
+                                Spacer(Modifier.weight(1f)) // map is behind
+                                SoftKeyNavBar("Edit Route", "Recenter", "Show Controls")
                             }
-                            // Use OSM Map
-                            OpenStreetMapView(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .weight(1f),
-                                coordinates = GeoPoint(35.0116, 135.7681),
-                                onMapReady = { map -> onOsmMapReady(map) }
-                            )
-
-                            SoftKeyNavBar(
-                                "Edit Route", "Recenter", "Show Controls"
-                            )
                         }
-                    }
-                    composable(Screen.Settings.route){
-                        LaunchedEffect(Unit) { currentScreen.value = Screen.Settings }
-                        SettingsScreen(onBackClick = {  } )
+
+                        composable(Screen.RouteSelect.route) {
+                            val scope = rememberCoroutineScope()
+                            LaunchedEffect(Unit) { currentScreen.value = Screen.RouteSelect }
+                            Column(
+                                Modifier
+                                    .fillMaxSize()
+                                    .clipToBounds()
+                            ) {
+                                LegacyTextField("") { query ->
+                                    scope.launch {
+                                        val destinations = getDestinations(45.5, -123.3, query)
+                                        Log.d("ugh", destinations.toString())
+                                    }
+                                }
+                                Spacer(Modifier.weight(1f))
+                                SoftKeyNavBar("Edit Route", "Recenter", "Show Controls")
+                            }
+                        }
+
+                        composable(Screen.Settings.route) {
+                            LaunchedEffect(Unit) { currentScreen.value = Screen.Settings }
+                            SettingsScreen(onBackClick = {})
+                        }
                     }
                 }
             }
+
         }
     }
     fun onOsmMapReady(map: org.osmdroid.views.MapView) {
