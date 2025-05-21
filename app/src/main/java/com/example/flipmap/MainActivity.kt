@@ -4,37 +4,20 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.location.Location
 import android.location.LocationManager
-import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
 // import android.provider.ContactsContract.CommonDataKinds.Website.URL
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
@@ -42,8 +25,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 // import com.android.volley.toolbox.Volley
 import com.example.flipmap.ui.theme.FlipMapTheme
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -54,18 +35,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.preference.PreferenceManager
 import com.example.flipmap.ui.theme.ThemeViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONObject
-import org.mapsforge.map.android.view.MapView
+// import org.mapsforge.map.android.view.MapView
 import org.osmdroid.config.Configuration
+import org.osmdroid.views.MapView
 import org.osmdroid.util.GeoPoint
-import org.osmdroid.views.overlay.Polyline
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import androidx.compose.ui.unit.IntSize
 
 // ADB command to reset location permissions
 // adb shell pm reset-permissions flipmap
@@ -106,7 +83,7 @@ val KEYMAP = KyoceraMappings
 
 class MainActivity : ComponentActivity() {
     private lateinit var locationManager: LocationManager
-    private var currentLocation: Location? = null
+    private var currentLocation: GeoPoint? = null
     val themeViewModel = ThemeViewModel()
     private lateinit var currentScreen: MutableState<Screen>
     private lateinit var navController: NavHostController
@@ -129,84 +106,99 @@ class MainActivity : ComponentActivity() {
             systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         }
 
-        // Location permissions
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         requestLocationPermission()
 
-        // This shouldn't drive state, but is used for things that need to know what state we're in
+        // This doesn't & shouldn't drive state, but is used for things that need to know what state we're in
         currentScreen = mutableStateOf(Screen.Main)
         setContent {
             navController = rememberNavController()
             FlipMapTheme(darkTheme = themeViewModel.isDarkMode.value) {
-                Box(Modifier.fillMaxSize()) {
-                    // persistent map view
-                    val mapState = remember { mutableStateOf<org.osmdroid.views.MapView?>(null) } // hold map if u need to interact
+                val mapState = remember { mutableStateOf<MapView?>(null) }
+                val overlayState = remember { mutableStateOf<MyLocationNewOverlay?>(null) }
+                val context = LocalContext.current
 
-                    OpenStreetMapView(
-                        modifier = Modifier.fillMaxSize(),
-                        coordinates = GeoPoint(35.0116, 135.7681), // initial location
-                        onMapReady = {
-                                map -> mapState.value = map
-                            onOsmMapReady(map)
+                // Define map up here to share between different screens
+                val visibleMapSize = remember { mutableStateOf(IntSize.Zero) }
+
+                OpenStreetMapView(
+                    modifier = Modifier.fillMaxSize(),
+                    coordinates = GeoPoint(44.5, -123.7681),
+                    onMapReady = { map ->
+                        mapState.value = map
+                        val overlay = MyLocationNewOverlay(GpsMyLocationProvider(context), map).apply {
+                            enableMyLocation()
+                            enableFollowLocation()
                         }
-                    )
+                        map.overlays.add(overlay)
+                        overlayState.value = overlay
+                        onOsmMapReady(map)
+                    },
+                    onSizeChanged = { size -> visibleMapSize.value = size }
+                )
 
-                    // ui overlaying the map
-                    NavHost(navController, startDestination = Screen.Main.route, modifier = Modifier.fillMaxSize()) {
-                        composable(Screen.Main.route) {
-                            LaunchedEffect(Unit) { currentScreen.value = Screen.Main }
-                            Column(
-                                Modifier
-                                    .fillMaxSize()
-                                    .clipToBounds()
-                            ) {
-                                Spacer(Modifier.weight(1f)) // map is behind
-                                SoftKeyNavBar("Edit Route", "Recenter", "Show Controls")
-                            }
+                // handles all the different screen transitions
+                // composables skip defining the map and just include a spacer to show what's behind
+                NavHost(navController, startDestination = Screen.Main.route, modifier = Modifier.fillMaxSize()) {
+                    // default screen - just map
+                    composable(Screen.Main.route) {
+                        LaunchedEffect(Unit) { currentScreen.value = Screen.Main }
+                        Column(Modifier.fillMaxSize().clipToBounds()) {
+                            Spacer(Modifier.weight(1f)) // map is behind
+                            SoftKeyNavBar("Edit Route", "Recenter", "Show Controls")
                         }
+                    }
 
-                        composable(Screen.RouteSelect.route) {
-                            val scope = rememberCoroutineScope()
-                            LaunchedEffect(Unit) { currentScreen.value = Screen.RouteSelect }
-                            Column(
-                                Modifier
-                                    .fillMaxSize()
-                                    .clipToBounds()
-                            ) {
-                                LegacyTextField("") { query ->
-                                    scope.launch {
-                                        val destinations = getDestinations(45.5, -123.3, query)
-                                        Log.d("ugh", destinations.toString())
+                    // search for destinations
+                    // and maybe select them too
+                    composable(Screen.RouteSelect.route) {
+                        val scope = rememberCoroutineScope()
+                        LaunchedEffect(Unit) { currentScreen.value = Screen.RouteSelect }
+                        Column(Modifier.fillMaxSize().clipToBounds()) {
+                            // Route input form
+                            // After this maybe need to transition to another state where it's like
+                            // Routeselect instead?
+                            LegacyTextField("") { query ->
+                                scope.launch {
+                                    val destinations = currentLocation?.let { it ->
+                                        getDestinations(it.latitude, it.longitude, query)
                                     }
+                                    mapState.value?.let { it ->
+                                        if (destinations != null) {
+                                            overlayState.value?.disableFollowLocation()
+                                            drawNumberedMapPoints(it, destinations)
+                                            zoomToBoundingBox(it, destinations, visibleMapSize.value)
+                                        }
+                                    }
+                                    Log.d("ugh", destinations.toString())
                                 }
-                                Spacer(Modifier.weight(1f))
-                                SoftKeyNavBar("Edit Route", "Recenter", "Show Controls")
                             }
+                            Spacer(Modifier.weight(1f))
+                            SoftKeyNavBar("Edit Route", "Recenter", "Show Controls")
                         }
+                    }
 
-                        composable(Screen.Settings.route) {
-                            LaunchedEffect(Unit) { currentScreen.value = Screen.Settings }
-                            SettingsScreen(onBackClick = {})
-                        }
+                    composable(Screen.Settings.route) {
+                        LaunchedEffect(Unit) { currentScreen.value = Screen.Settings }
+                        SettingsScreen(onBackClick = {})
                     }
                 }
             }
-
         }
     }
-    fun onOsmMapReady(map: org.osmdroid.views.MapView) {
+    fun onOsmMapReady(map: MapView) {
         currentLocation?.let { location ->
             val geoPoint = GeoPoint(location.latitude, location.longitude)
             map.controller.setCenter(geoPoint)
+            // these don't matter bc the map is ready before the location appears
+            // We will need to save most recent coordinates + route to make this work
+            // probably
+            // map.controller.stopAnimation(true)
+            // map.controller.stopPanning()
+            geoPoint
         }
-    }
-    fun setRouteCoordinates(map: org.osmdroid.views.MapView, geoPoints: List<GeoPoint>) {
-        val line = Polyline()
-        line.setPoints(geoPoints)
-        map.overlays.clear() // optional, clears old lines
-        map.overlays.add(line)
-        map.invalidate()
-        Log.d("paul", "did da stuff")
+        // TODO make real
+        currentLocation = GeoPoint(44.56, -123.3)
     }
 
     private fun requestLocationPermission() {
@@ -233,9 +225,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    // HTTP POST request to API endpoint (https://api.anti-computer.club/route)
-    // returns coordinate pair array
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {

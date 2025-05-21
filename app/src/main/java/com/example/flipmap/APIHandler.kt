@@ -9,9 +9,10 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import org.osmdroid.util.GeoPoint
 
 suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, dest_lon: Double)
-    : Array<Pair<Double, Double>>? {
+    : List<GeoPoint>? {
 
     // create a JSON object
     val json = JSONObject().apply {
@@ -42,16 +43,7 @@ suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, 
                 Log.d("API_RESPONSE", "Response: $jsonResponse")
 
                 val routeArray = jsonResponse.getJSONArray("route")
-                Array(routeArray.length()/2) { i ->
-                    try {
-                        val lat = routeArray.getDouble(i*2)
-                        val lon = routeArray.getDouble(i*2+1)
-                        Pair(lat, lon)
-                    } catch (e: Exception) {
-                        Log.e("API_ERROR", "Error parsing coordinate at index ${i*2}", e)
-                        Pair(0.0, 0.0) // Fallback
-                    }
-                }
+                parseGeoPoints(routeArray.toString())
             } else {
                 Log.e("API_ERROR", "Response not successful: ${response.code}")
                 null
@@ -64,7 +56,7 @@ suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, 
     }
 }
 
-suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): JSONArray? {
+suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): List<GeoPoint>? {
     val json = JSONObject().apply {
         put("lat", src_lat)
         put("lon", src_lon)
@@ -89,7 +81,7 @@ suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): JS
                 Log.d("API_RESPONSE", "Response: $jsonResponse")
 
                 val routeArray = jsonResponse.getJSONArray("results")
-                routeArray
+                parseGeoPoints(routeArray.toString())
             } else {
                 Log.e("API_ERROR", "Response not successful: ${response.code}")
                 null
@@ -99,4 +91,16 @@ suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): JS
             null
         }
     }
+}
+// maybe turn this into something real at some point
+fun parseGeoPoints(json: String): List<GeoPoint> {
+    val arr = JSONArray(json)
+    val result = mutableListOf<GeoPoint>()
+    for (i in 0 until arr.length()) {
+        val obj = arr.getJSONObject(i)
+        val lat = obj.getDouble("lat")
+        val lon = obj.getDouble("lon")
+        result.add(GeoPoint(lat, lon))
+    }
+    return result
 }
