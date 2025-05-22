@@ -27,12 +27,6 @@
             android:value="AIzaSyAuzFdGD87DtsdNy1Wv375ZGrgBykU9MuM"
             />
 
-        <service
-            android:name=".LocationService"
-            android:enabled="true"
-            android:foregroundServiceType="location"
-        android:exported="false"></service>
-
         <activity
             android:name=".MainActivity"
             android:exported="true"
