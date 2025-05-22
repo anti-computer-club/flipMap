@@ -82,6 +82,10 @@ sealed class Screen(val route: String) {
     object Settings    : Screen("settings")
 }
 
+/**
+ * Info for NavBar entry
+ * @param onClick Item action callback
+ **/
 data class NavBarItem(
     val label: String,
     val onClick: () -> Unit
@@ -92,13 +96,23 @@ data class NavBar(
     val right: NavBarItem
 )
 
+/**
+ * A map of keyMaps, capable of calling async callbacks
+**/
 class KeyHandler(private val scope: CoroutineScope) {
     var hotkeys by mutableStateOf<Map<Int, suspend () -> Unit>>(emptyMap())
 
+    /**
+     * Add a new keyCode to [hotkeys]
+     * @param action Keypress callback
+     */
     fun bind(keyCode: Int, action: suspend () -> Unit) {
         hotkeys = hotkeys + (keyCode to action)
     }
 
+    /**
+     * Clear all [hotkeys] binds
+     */
     fun clear() {
         hotkeys = emptyMap()
     }
@@ -117,25 +131,24 @@ class MainActivity : ComponentActivity() {
     // UGLY! UGLY!
     private var currentNavBar by mutableStateOf(NavBar(NavBarItem("", { }), NavBarItem("", { }), NavBarItem("", { })))
     private lateinit var navController: NavHostController
-    // val LocalKeyHandler = compositionLocalOf { error("no keyhandler provided") }
     val keyHandler = KeyHandler(lifecycleScope)
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Set up the navbar items that don't require complicated state
+        // In general, keep them as high-scope as possible for reuse?
         val editRouteButton = NavBarItem("Edit Route") {
             navController.navigate(Screen.RouteSelect.route) {
+                // Refresh screen, don't add a bunch of duplicates to the navstack
                 launchSingleTop = true
                 restoreState = false
             } }
         val settingsRouteButton = NavBarItem("Settings") { navController.navigate(Screen.Settings.route) }
-        super.onCreate(savedInstanceState)
 
-        // Configure OSMDroid
+        super.onCreate(savedInstanceState)
         Configuration.getInstance().load(
             this,
             PreferenceManager.getDefaultSharedPreferences(this)
         )
-
-        // Make top bar transparent
-        // enableEdgeToEdge()
 
         // Hide bottom system navbar
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
@@ -153,9 +166,6 @@ class MainActivity : ComponentActivity() {
                 val mapState = remember { mutableStateOf<MapView?>(null) }
                 val overlayState = remember { mutableStateOf<MyLocationNewOverlay?>(null) }
                 val context = LocalContext.current
-
-                // Define map up here to share between different screens
-                val visibleMapSize = remember { mutableStateOf(IntSize.Zero) }
 
                 val recenterButton = NavBarItem("Recenter") {
                     overlayState.value?.enableFollowLocation()
@@ -197,9 +207,11 @@ class MainActivity : ComponentActivity() {
                     mapState.value?.controller?.scrollBy(0, 25)
                 }
 
+                // Define map up here to share between different screens
+                val visibleMapSize = remember { mutableStateOf(IntSize.Zero) }
                 OpenStreetMapView(
                     modifier = Modifier.fillMaxSize(),
-                    coordinates = GeoPoint(44.5, -123.7681),
+                    coordinates = GeoPoint(44.5, -123.7681), // TODO get these from saved last location
                     onMapReady = { map ->
                         mapState.value = map
                         val overlay = MyLocationNewOverlay(GpsMyLocationProvider(context), map).apply {
@@ -214,36 +226,41 @@ class MainActivity : ComponentActivity() {
                 )
 
                 // handles all the different screen transitions
-                // composables skip defining the map and just include a spacer to show what's behind
-                // still refactoring, you can ignore dated references here.
+                // composables include a spacer to show the map, which is rendered behind them
                 NavHost(navController, startDestination = Screen.Main.route, modifier = Modifier.fillMaxSize()) {
-                    // default screen - just map
+                    // default screen - just the map
                     composable(Screen.Main.route) {
                         LaunchedEffect(Unit) {
                             currentNavBar = NavBarMain
-                            mapState.value?.overlays?.clear() // TODO why this no work
+                            mapState.value?.overlays?.clear()
                             keyHandler.clear()
                         }
                         Column(Modifier
                             .fillMaxSize()
                             .clipToBounds()) {
-                            Spacer(Modifier.weight(1f)) // map is behind
+                            Spacer(Modifier.weight(1f))
                             SoftKeyNavBar(currentNavBar.left.label, currentNavBar.center.label, currentNavBar.right.label)
                         }
                     }
 
                     // search for destinations
                     // and maybe select them too
+                    // this one is getting messsy and needs to be split up
                     composable(Screen.RouteSelect.route) {
                         val scope = rememberCoroutineScope()
                         LaunchedEffect(Unit) {  currentNavBar = NavBarRouteSelect }
                         Column(Modifier
                             .fillMaxSize()
                             .clipToBounds()) {
+                            // Text entry field
                             LegacyTextField("") { query ->
+                                // Given callback to fetch top 3 results
+                                // And render them
+                                // And map keys to them
+                                // And render a route to them
+                                // TODO this has grown unwieldy
                                 scope.launch {
                                     val cl = currentLocation ?: return@launch
-                                    // Af
                                     val destinations = getDestinations(cl.latitude, cl.longitude, query)
                                     Log.d("destinations", destinations.toString())
                                     mapState.value?.let { it ->
@@ -296,8 +313,7 @@ class MainActivity : ComponentActivity() {
             // map.controller.stopPanning()
             geoPoint
         }
-        // TODO make real
-        currentLocation = GeoPoint(44.56, -123.3)
+        currentLocation = GeoPoint(44.56, -123.3) // TODO make real
     }
 
     private fun requestLocationPermission() {
@@ -325,11 +341,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // This catches key events
+    // It was *too* good at catching them, so we release key events triggered
+    // while a text field is being edited
+    // TODO look into that
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         Log.d("FlipMapKeyEvent", event.toString())
-        // janky
-        if (currentFocus !is EditText) {
+        if (currentFocus !is EditText) { // janky
             if (event.action == KeyEvent.ACTION_DOWN) {
                 when (event.keyCode) {
                     KEYMAP.SOFT_LEFT -> {

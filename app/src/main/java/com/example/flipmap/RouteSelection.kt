@@ -30,7 +30,6 @@ fun LegacyTextField(
                 setText(text)
                 setTextColor(android.graphics.Color.BLACK)
                 requestFocus()
-                // Log.d("TextField", "Factory running")
 
                 post {
                     val imm = ctx.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
