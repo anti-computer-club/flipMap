@@ -149,6 +149,15 @@ class MainActivity : ComponentActivity() {
             this,
             PreferenceManager.getDefaultSharedPreferences(this)
         )
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        val lat = prefs.getString("last_lat", null)?.toDoubleOrNull()
+        val lon = prefs.getString("last_lon", null)?.toDoubleOrNull()
+        lat?.let { latVal ->
+            lon?.let { lonVal ->
+                currentLocation = GeoPoint(latVal, lonVal)
+                Log.d("prefs", "read prefs")
+            }
+        }
 
         // Hide bottom system navbar
         val insetsController = WindowCompat.getInsetsController(window, window.decorView)
@@ -182,11 +191,15 @@ class MainActivity : ComponentActivity() {
                 // I LOVE REPEATING MSELF!! TODO
                 keyHandler.bind(KeyEvent.KEYCODE_POUND) {
                     mapState.value?.controller?.stopAnimation(true)
-                    mapState.value?.controller?.zoomIn()
+                    if (mapState.value?.zoomLevelDouble!! < 22.0) {
+                        mapState.value?.controller?.zoomIn()
+                    }
                 }
                 keyHandler.bind(KeyEvent.KEYCODE_STAR) {
                     mapState.value?.controller?.stopAnimation(true)
-                    mapState.value?.controller?.zoomOut()
+                    if (mapState.value?.zoomLevelDouble!! > 5.0) {
+                        mapState.value?.controller?.zoomOut()
+                    }
                 }
                 keyHandler.bind(KeyEvent.KEYCODE_DPAD_RIGHT) {
                     overlayState.value?.disableFollowLocation()
@@ -213,7 +226,7 @@ class MainActivity : ComponentActivity() {
                 val visibleMapSize = remember { mutableStateOf(IntSize.Zero) }
                 OpenStreetMapView(
                     modifier = Modifier.fillMaxSize(),
-                    coordinates = GeoPoint(44.5, -123.7681), // TODO get these from saved last location
+                    coordinates = currentLocation ?: GeoPoint(44.5, -123.7681),
                     onMapReady = { map ->
                         mapState.value = map
                         val overlay = MyLocationNewOverlay(GpsMyLocationProvider(context), map).apply {
@@ -223,6 +236,14 @@ class MainActivity : ComponentActivity() {
                         map.overlays.add(overlay)
                         overlayState.value = overlay
                         onOsmMapReady(map)
+                        overlay.run {
+                            runOnFirstFix {
+                                val loc = myLocation
+                                currentLocation = loc
+                                saveLocationToPrefs(loc) // <- if you're persisting it too
+                            }
+                        }
+
                     },
                     onSizeChanged = { size -> visibleMapSize.value = size }
                 )
@@ -308,14 +329,17 @@ class MainActivity : ComponentActivity() {
         currentLocation?.let { location ->
             val geoPoint = GeoPoint(location.latitude, location.longitude)
             map.controller.setCenter(geoPoint)
-            // these don't matter bc the map is ready before the location appears
-            // We will need to save most recent coordinates + route to make this work
-            // probably
-            // map.controller.stopAnimation(true)
-            // map.controller.stopPanning()
-            geoPoint
         }
-        currentLocation = GeoPoint(44.56, -123.3) // TODO make real
+
+    }
+
+    fun saveLocationToPrefs(location: GeoPoint) {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        prefs.edit()
+            .putString("last_lat", location.latitude.toString())
+            .putString("last_lon", location.longitude.toString())
+            .apply()
+        Log.d("pref", "wrote prefs")
     }
 
     private fun requestLocationPermission() {
@@ -346,7 +370,6 @@ class MainActivity : ComponentActivity() {
     // This catches key events
     // It was *too* good at catching them, so we release key events triggered
     // while a text field is being edited
-    // TODO look into that
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         Log.d("FlipMapKeyEvent", event.toString())
