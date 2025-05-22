@@ -42,7 +42,7 @@ suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, 
             } else {
                 Log.e("API_ERROR", "Response not successful: ${response.code}")
                 Log.e("API_ERROR", "Response not successful: ${response.body}")
-                Log.e("API_ERROR", "Sent: ${json.toString()}")
+                Log.e("API_ERROR", "Sent: $json")
                 null
             }
         } catch (e: Exception) {
@@ -70,7 +70,7 @@ suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): Li
                 .post(requestBody)
                 .build()
 
-            Log.d("API_DEBUG", "Sending JSON: ${json.toString()}")
+            Log.d("API_DEBUG", "Sending JSON: $json")
             val response = client.newCall(request).execute()
 
             if (response.isSuccessful) {
