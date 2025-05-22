@@ -14,7 +14,6 @@ import org.osmdroid.util.GeoPoint
 suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, dest_lon: Double)
     : List<GeoPoint>? {
 
-    // create a JSON object
     val json = JSONObject().apply {
         put("src_lat", src_lat)
         put("src_lon", src_lon)
@@ -22,16 +21,11 @@ suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, 
         put("dst_lon", dest_lon)
     }
 
-    // use withContext for long-running tasks
     return withContext(Dispatchers.IO) {
         try {
-            // create HTTP client instance
             val client = OkHttpClient()
-
-            // convert into req body
             val requestBody = json.toString().toRequestBody("application/json".toMediaType())
 
-            // build POST request with API URL and JSON req body
             val request = Request.Builder()
                 .url("https://api.anticomputer.club/route")
                 .post(requestBody)
