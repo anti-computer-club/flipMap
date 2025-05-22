@@ -100,6 +100,12 @@ fun createNumberedIcon(context: Context, number: Int): Drawable {
 fun zoomToBoundingBox(map: MapView, geoPoints: List<GeoPoint>, visibleSize: IntSize, paddingFraction: Float = 0.05f) {
     if (geoPoints.isEmpty()) return
 
+    if (geoPoints.size == 1) {
+        map.controller.setZoom(15.0) // zoomTo not working
+        map.controller.setCenter(geoPoints[0])
+        return
+    }
+
     val boundingBox = BoundingBox.fromGeoPoints(geoPoints)
 
     val horizontalPadding = (visibleSize.width * paddingFraction).toInt()
