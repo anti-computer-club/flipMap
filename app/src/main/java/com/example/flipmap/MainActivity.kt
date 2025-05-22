@@ -169,7 +169,9 @@ class MainActivity : ComponentActivity() {
 
                 val recenterButton = NavBarItem("Recenter") {
                     overlayState.value?.enableFollowLocation()
-                    mapState.value?.controller?.setZoom(12.0)
+                    if (mapState.value?.zoomLevelDouble!! < 12.0){
+                        mapState.value?.controller?.setZoom(12.0)
+                    }
                     mapState.value?.controller?.stopAnimation(true)
                     Log.d("button", "recentered")
                 }
