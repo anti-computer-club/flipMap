@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-@Deprecated("We don't use this any more and kind of never did")
+@Deprecated("We don't use this any more and kind of never did. Maybe add tileservers?")
 fun SettingsScreen() {
     val activity = LocalContext.current as MainActivity
     val isDarkMode = activity.themeViewModel.isDarkMode.value

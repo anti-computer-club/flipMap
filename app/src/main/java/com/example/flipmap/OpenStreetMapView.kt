@@ -1,12 +1,11 @@
 package com.example.flipmap
 
 import android.preference.PreferenceManager
-import androidx.compose.foundation.layout.fillMaxSize
+import android.preference.PreferenceManager.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -14,8 +13,6 @@ import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
-import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.layout.onSizeChanged
 
@@ -30,12 +27,12 @@ fun OpenStreetMapView(
 
     // configure osmdroid
     Configuration.getInstance()
-        .load(context, PreferenceManager.getDefaultSharedPreferences(context))
+        .load(context, getDefaultSharedPreferences(context))
 
     // create + remember MapView
     val mapView = remember {
         MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK)
+            setTileSource(TileSourceFactory.MAPNIK) // TODO this can be added to settings
             setMultiTouchControls(true)
             controller.setZoom(15.0)
             controller.setCenter(coordinates)
@@ -43,7 +40,7 @@ fun OpenStreetMapView(
     }
 
     // setup lifecycle observer for mapView
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
@@ -58,12 +55,12 @@ fun OpenStreetMapView(
         }
     }
 
-    // setup location overlay once
+    // Most of the interesting stuff happens in the callback (from MainActivity)
+    // because we don't want to pass a bunch of state here
     LaunchedEffect(Unit) {
         onMapReady(mapView)
     }
 
-    // render the view
     AndroidView(
         factory = { mapView },
         modifier = modifier

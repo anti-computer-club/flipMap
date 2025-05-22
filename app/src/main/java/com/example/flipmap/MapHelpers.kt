@@ -18,13 +18,13 @@ import org.osmdroid.views.overlay.Polyline
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.max
 
+// Render a route
 fun setRouteCoordinates(map: MapView, geoPoints: List<GeoPoint>) {
     val line = Polyline()
     line.setPoints(geoPoints)
     map.overlays.clear()
     map.overlays.add(line)
     map.invalidate()
-    Log.d("paul", "set route coordinates")
 }
 
 @Deprecated("deprecated in favor of drawNumberedMapPoints")
@@ -49,6 +49,8 @@ fun drawMapPoints(map: MapView, geoPoints: List<GeoPoint>) {
     map.invalidate()
     Log.d("paul", "drew ${geoPoints.size} points")
 }
+
+// Draw some numbered points
 fun drawNumberedMapPoints(map: MapView, geoPoints: List<GeoPoint>) {
     map.overlays.clear()
 
@@ -64,6 +66,7 @@ fun drawNumberedMapPoints(map: MapView, geoPoints: List<GeoPoint>) {
     map.invalidate()
 }
 
+// create bitmap with numbers inside
 fun createNumberedIcon(context: Context, number: Int): Drawable {
     val size = 30
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -90,7 +93,10 @@ fun createNumberedIcon(context: Context, number: Int): Drawable {
     return BitmapDrawable(context.resources, bitmap)
 }
 
-// Wraps
+/**
+ * Mostly just wraps zoomToBoundingBox
+ * @param visibleSize The dimensions of the map space
+ **/
 fun zoomToBoundingBox(map: MapView, geoPoints: List<GeoPoint>, visibleSize: IntSize, paddingFraction: Float = 0.05f) {
     if (geoPoints.isEmpty()) return
 
