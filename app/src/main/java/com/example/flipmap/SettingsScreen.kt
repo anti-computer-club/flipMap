@@ -11,15 +11,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
-fun SettingsScreen(onBackClick: () -> Unit) {
+@Deprecated("We don't use this any more and kind of never did")
+fun SettingsScreen() {
     val activity = LocalContext.current as MainActivity
     val isDarkMode = activity.themeViewModel.isDarkMode.value
 
@@ -75,22 +72,6 @@ fun SettingsScreen(onBackClick: () -> Unit) {
                         )
                         .clickable { activity.themeViewModel.toggleTheme(true) }
                         .padding(horizontal = 24.dp, vertical = 12.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                Text(
-                    text = "Back",
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .clickable { onBackClick() },
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
                 )
             }
         }

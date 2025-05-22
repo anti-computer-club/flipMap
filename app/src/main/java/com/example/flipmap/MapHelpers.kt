@@ -9,7 +9,6 @@ import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import android.util.Log
-import androidx.compose.runtime.MutableState
 import androidx.core.content.ContextCompat
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
@@ -19,7 +18,7 @@ import org.osmdroid.views.overlay.Polyline
 import androidx.compose.ui.unit.IntSize
 import kotlin.math.max
 
-fun setRouteCoordinates(map: org.osmdroid.views.MapView, geoPoints: List<GeoPoint>) {
+fun setRouteCoordinates(map: MapView, geoPoints: List<GeoPoint>) {
     val line = Polyline()
     line.setPoints(geoPoints)
     map.overlays.clear()
@@ -27,7 +26,9 @@ fun setRouteCoordinates(map: org.osmdroid.views.MapView, geoPoints: List<GeoPoin
     map.invalidate()
     Log.d("paul", "set route coordinates")
 }
-fun drawMapPoints(map: org.osmdroid.views.MapView, geoPoints: List<GeoPoint>) {
+
+@Deprecated("deprecated in favor of drawNumberedMapPoints")
+fun drawMapPoints(map: MapView, geoPoints: List<GeoPoint>) {
     map.overlays.clear() // optional, remove previous markers
 
     geoPoints.forEachIndexed { index, point ->
@@ -62,6 +63,7 @@ fun drawNumberedMapPoints(map: MapView, geoPoints: List<GeoPoint>) {
     }
     map.invalidate()
 }
+
 fun createNumberedIcon(context: Context, number: Int): Drawable {
     val size = 30
     val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
@@ -87,6 +89,8 @@ fun createNumberedIcon(context: Context, number: Int): Drawable {
 
     return BitmapDrawable(context.resources, bitmap)
 }
+
+// Wraps
 fun zoomToBoundingBox(map: MapView, geoPoints: List<GeoPoint>, visibleSize: IntSize, paddingFraction: Float = 0.05f) {
     if (geoPoints.isEmpty()) return
 
