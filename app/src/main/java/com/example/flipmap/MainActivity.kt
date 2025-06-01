@@ -174,7 +174,6 @@ class MainActivity : ComponentActivity() {
                 // Map defined up here to share between different composables
                 val mapState = remember { mutableStateOf<MapView?>(null) }
                 val overlayState = remember { mutableStateOf<MyLocationNewOverlay?>(null) }
-                val visibleMapSize = remember { mutableStateOf(IntSize.Zero) }
 
                 val recenterButton = NavBarItem("Recenter") {
                     overlayState.value?.enableFollowLocation()
@@ -190,6 +189,7 @@ class MainActivity : ComponentActivity() {
 
                 // Future extensions should include an abstraction for this, but scoping bindings
                 // could be a footgun, so leaving as-is until necessary
+
                 keyHandler.bind(KeyEvent.KEYCODE_POUND) {
                     mapState.value?.controller?.stopAnimation(true)
                     if (mapState.value?.zoomLevelDouble!! < 22.0) {
@@ -225,6 +225,8 @@ class MainActivity : ComponentActivity() {
 
                 // Map rendering. only one instance throughout
                 // All composables include a spacer to show the map behind the UI
+                // Define map up here to share between different screens
+                val visibleMapSize = remember { mutableStateOf(IntSize.Zero) }
                 OpenStreetMapView(
                     modifier = Modifier.fillMaxSize(),
                     coordinates = currentLocation ?: GeoPoint(44.5, -123.7681),
