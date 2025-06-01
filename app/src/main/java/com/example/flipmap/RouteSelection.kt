@@ -37,7 +37,7 @@ fun LegacyTextField(
                 }
 
                 setOnKeyListener { v, keyCode, event ->
-                    // ACTION_DOWN closes the hardware keyboard (iirc)
+                    // ACTION_DOWN closes the hardware keyboard (afaik - seems to be true for Kyocera)
                     // so we catch the ACTION_UP to trigger the callback
                     if (event.action == KeyEvent.ACTION_UP && keyCode == 23) {
                         onTextSubmission(this.text.toString())
