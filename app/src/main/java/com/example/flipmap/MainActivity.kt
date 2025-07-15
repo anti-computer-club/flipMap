@@ -198,7 +198,7 @@ class MainActivity : ComponentActivity() {
                 }
                 keyHandler.bind(KeyEvent.KEYCODE_STAR) {
                     mapState.value?.controller?.stopAnimation(true)
-                    if (mapState.value?.zoomLevelDouble!! > 5.0) {
+                    if (mapState.value?.zoomLevelDouble!! > 3.0) {
                         mapState.value?.controller?.zoomOut()
                     }
                 }
@@ -302,7 +302,7 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                     val route = getRouteFromApi(cl.latitude, cl.longitude, destination.latitude, destination.longitude)
                                                     if (route != null) {
-                                                        setRouteCoordinates(it, route)
+                                                        setRouteCoordinates(it, route, 5)
                                                     }
                                                 }
                                             }
@@ -316,9 +316,14 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(Screen.Settings.route) {
-                        LaunchedEffect(Unit) { currentNavBar = NavBarSettings }
-                        SettingsScreen()
-                        SoftKeyNavBar(currentNavBar.left.label, currentNavBar.center.label, currentNavBar.right.label)
+                        Column(Modifier
+                            .fillMaxSize()
+                            .clipToBounds()) {
+                            LaunchedEffect(Unit) { currentNavBar = NavBarSettings }
+                            SettingsScreen()
+                            Spacer(Modifier.weight(1f))
+                            SoftKeyNavBar(currentNavBar.left.label, currentNavBar.center.label, currentNavBar.right.label)
+                        }
                     }
                 }
             }
