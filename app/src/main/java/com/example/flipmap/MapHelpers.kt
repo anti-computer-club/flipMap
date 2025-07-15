@@ -19,8 +19,10 @@ import androidx.compose.ui.unit.IntSize
 import kotlin.math.max
 
 // Render a route
-fun setRouteCoordinates(map: MapView, geoPoints: List<GeoPoint>) {
+fun setRouteCoordinates(map: MapView, geoPoints: List<GeoPoint>, lod: Int = 1) {
     val line = Polyline()
+    line.paint.strokeCap = Paint.Cap.ROUND
+    line.paint.setARGB(0xff, 0x1b, 0xb5, 0xf2)
     line.setPoints(geoPoints)
     map.overlays.clear()
     map.overlays.add(line)
