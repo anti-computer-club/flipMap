@@ -6,9 +6,16 @@ FlipMap is intended to provide personal navigation services on any reasonably-mo
 
 For more information, see our [project website.](https://anticomputer.club/)
 
-## Usage
+1. Download the APK from the [releases](https://github.com/anti-computer-club/flipMap/releases) page
+2. Install the APK however you prefer
+    * Not all flip phones support third-party APK installation
+3. You're ready!
+    * Use the softkeys (the top left/right keys on your phone) to trigger the left/right navbar items
+    * Use `*` and `#` to zoom out/in.
+    * Use the directional pad to pan the map
+    * Use 1/2/3 to select a route after searching
 
-See the guide for new users [here.](https://github.com/anti-computer-club/FlipMapDownload/blob/main/README.md)
+If things aren't working as documented, feel free to file an issue!
 
 ## Roadmap and Contribution Guidelines
 
