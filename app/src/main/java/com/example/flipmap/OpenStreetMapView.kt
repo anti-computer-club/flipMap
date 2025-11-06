@@ -21,12 +21,12 @@ import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 
-
 @Composable
 fun OpenStreetMapView(
     modifier: Modifier = Modifier,
     coordinates: GeoPoint,
     onMapReady: (MapView) -> Unit = {},
+    // style: OnlineTileSourceBase = TONER,
     onSizeChanged: (IntSize) -> Unit = {}
 ) {
     val TONER: OnlineTileSourceBase = XYTileSource(

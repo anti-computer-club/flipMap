@@ -53,7 +53,7 @@ suspend fun getRouteFromApi(src_lat: Double, src_lon: Double, dest_lat: Double, 
     }
 }
 
-suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): List<GeoPoint>? {
+suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): List<Pair<String, GeoPoint>>? {
     val json = JSONObject().apply {
         put("lat", src_lat)
         put("lon", src_lon)
@@ -78,7 +78,7 @@ suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): Li
                 Log.d("API_RESPONSE", "Response: $jsonResponse")
 
                 val routeArray = jsonResponse?.getJSONArray("results")
-                parseGeoPoints(routeArray.toString())
+                parseDestinations(routeArray.toString())
             } else {
                 Log.e("API_ERROR", "Response not successful: ${response.code}")
                 null
@@ -90,14 +90,14 @@ suspend fun getDestinations(src_lat: Double, src_lon: Double, query: String): Li
     }
 }
 // maybe turn this into something real at some point
-fun parseGeoPoints(json: String): List<GeoPoint> {
+fun parseDestinations(json: String): List<Pair<String, GeoPoint>> {
     val arr = JSONArray(json)
-    val result = mutableListOf<GeoPoint>()
+    val result = mutableListOf<Pair<String, GeoPoint>>()
     for (i in 0 until arr.length()) {
         val obj = arr.getJSONObject(i)
         val lat = obj.getDouble("lat")
         val lon = obj.getDouble("lon")
-        result.add(GeoPoint(lat, lon))
+        result.add(Pair(obj.getString("name"), GeoPoint(lat, lon)))
     }
     return result
 }

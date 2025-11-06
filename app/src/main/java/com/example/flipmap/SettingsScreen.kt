@@ -1,79 +1,71 @@
 package com.example.flipmap
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
+import androidx.compose.runtime.MutableState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
+import org.osmdroid.views.MapView
+import java.util.logging.Logger
 
 @Composable
 @Deprecated("We don't use this any more and kind of never did. Maybe add tileservers?")
-fun SettingsScreen() {
+fun SettingsScreen(mapView: MutableState<MapView?>) {
     val activity = LocalContext.current as MainActivity
-    val isDarkMode = activity.themeViewModel.isDarkMode.value
 
-    val selectedPurple = Color(0xFF8B4DC6)
-    val unselectedLightPurple = Color(0xFFF3EAFB)
-    val unselectedDarkPurple = Color(0xFF3D2F47)
+    Column(Modifier
+        // .fillMaxSize()
+        .background(Color.White),
+        ) {
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
-        Column(Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "Settings",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+        Text(
+            text = "Settings",
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            fontSize = 22.sp,
+            modifier = Modifier.fillMaxWidth(1f),
+        )
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp, vertical = 16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Text(
-                    text = "Light Mode",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isDarkMode) Color.White else Color.Black,
-                    modifier = Modifier
-                        .background(
-                            color = if (!isDarkMode) selectedPurple else if (isDarkMode) unselectedDarkPurple else unselectedLightPurple,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable { activity.themeViewModel.toggleTheme(false) }
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
-                )
-                Text(
-                    text = "Dark Mode",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isDarkMode) Color.White else Color.Black,
-                    modifier = Modifier
-                        .background(
-                            color = if (isDarkMode) selectedPurple else if (!isDarkMode) unselectedLightPurple else unselectedDarkPurple,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable { activity.themeViewModel.toggleTheme(true) }
-                        .padding(horizontal = 24.dp, vertical = 12.dp)
-                )
-            }
-        }
+        Text(
+            text = "Mapnik Style",
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .clickable {
+                    Log.d("pref", "checking")
+                    mapView.value?.let {
+                        Log.d("pref", "set to mapnik")
+                        it.setTileSource(TileSourceFactory.MAPNIK)
+                        it.invalidate()
+                     }
+                 }
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                .fillMaxWidth(1f),
+
+            )
+        Text(
+            text = "Toner Style",
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .clickable {
+                    Log.d("pref", "checking")
+                    mapView.value?.let {
+                        Log.d("pref", "set to toner")
+                        it.setTileSource(CustomTileSources.TONER)
+                        it.invalidate()
+                    }
+                }
+                .padding(horizontal = 24.dp, vertical = 12.dp)
+                .fillMaxWidth(1f),
+        )
     }
 }

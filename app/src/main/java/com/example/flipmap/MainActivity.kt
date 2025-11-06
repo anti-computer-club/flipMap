@@ -277,7 +277,10 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .clipToBounds()) {
                             // Text entry field
-                            LegacyTextField("") { query ->
+                            // Create state for the text field
+                            var textFieldValue by remember { mutableStateOf("") }
+
+                            LegacyTextField(textFieldValue) { query ->
                                 // Given callback to fetch top 3 results
                                 // render them, map to 1/2/3, and render route on keypress
                                 // this has grown unwieldy - future work should include abstractions
@@ -288,19 +291,22 @@ class MainActivity : ComponentActivity() {
                                     mapState.value?.let { it ->
                                         if (destinations != null) {
                                             overlayState.value?.disableFollowLocation()
-                                            drawNumberedMapPoints(it, destinations)
-                                            zoomToBoundingBox(it, destinations, visibleMapSize.value)
+                                            drawNumberedMapPoints(it, destinations.map { it.second })
+                                            zoomToBoundingBox(it, destinations.map { it.second }, visibleMapSize.value)
 
                                             // Map destinations to hardware keys
                                             keyHandler.clear()
                                             destinations.take(3).forEachIndexed { idx, destination ->
                                                 keyHandler.bind(KeyEvent.KEYCODE_1 + idx) {
                                                     overlayState.value?.disableFollowLocation()
-                                                    mapState.value?.controller?.setCenter(destination)
+                                                    // Update the text field value!
+                                                    textFieldValue = destination.first
+
+                                                    mapState.value?.controller?.setCenter(destination.second)
                                                     if (mapState.value?.zoomLevelDouble!! < 12.0){
                                                         mapState.value?.controller?.setZoom(12.0)
                                                     }
-                                                    val route = getRouteFromApi(cl.latitude, cl.longitude, destination.latitude, destination.longitude)
+                                                    val route = getRouteFromApi(cl.latitude, cl.longitude, destination.second.latitude, destination.second.longitude)
                                                     if (route != null) {
                                                         setRouteCoordinates(it, route, 5)
                                                     }
@@ -334,7 +340,6 @@ class MainActivity : ComponentActivity() {
             val geoPoint = GeoPoint(location.latitude, location.longitude)
             map.controller.setCenter(geoPoint)
         }
-
     }
 
     fun saveLocationToPrefs(location: GeoPoint) {
@@ -384,8 +389,13 @@ class MainActivity : ComponentActivity() {
                         return true
                     }
                     KEYMAP.SOFT_CENTER -> {
-                        currentNavBar.center.onClick()
-                        return true
+                        // Hack
+                        if (navController.currentDestination?.route != Screen.Settings.route) {
+                            Log.d("KeyEvent", "Center Click")
+                            Log.d("KeyEvent", currentFocus.toString())
+                            currentNavBar.center.onClick()
+                            return true
+                        }
                     }
                     KEYMAP.SOFT_RIGHT -> {
                         currentNavBar.right.onClick()
