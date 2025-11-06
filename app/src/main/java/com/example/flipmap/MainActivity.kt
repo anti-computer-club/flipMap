@@ -322,6 +322,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable(Screen.Settings.route) {
+                        keyHandler.clear()
                         Column(Modifier
                             .fillMaxSize()
                             .clipToBounds()) {
