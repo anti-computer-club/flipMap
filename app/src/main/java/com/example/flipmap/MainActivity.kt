@@ -326,7 +326,7 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .clipToBounds()) {
                             LaunchedEffect(Unit) { currentNavBar = NavBarSettings }
-                            SettingsScreen()
+                            SettingsScreen(mapState)
                             Spacer(Modifier.weight(1f))
                             SoftKeyNavBar(currentNavBar.left.label, currentNavBar.center.label, currentNavBar.right.label)
                         }

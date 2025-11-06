@@ -51,7 +51,7 @@ fun OpenStreetMapView(
     // create + remember MapView
     val mapView = remember {
         MapView(context).apply {
-            setTileSource(TONER) // TODO this can be added to settings
+            setTileSource(TileSourceFactory.MAPNIK)
             setMultiTouchControls(true)
             controller.setZoom(15.0)
             controller.setCenter(coordinates)

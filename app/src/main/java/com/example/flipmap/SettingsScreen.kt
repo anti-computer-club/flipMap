@@ -19,7 +19,6 @@ import org.osmdroid.views.MapView
 import java.util.logging.Logger
 
 @Composable
-@Deprecated("We don't use this any more and kind of never did. Maybe add tileservers?")
 fun SettingsScreen(mapView: MutableState<MapView?>) {
     val activity = LocalContext.current as MainActivity
 
