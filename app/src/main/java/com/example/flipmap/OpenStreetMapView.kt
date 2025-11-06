@@ -21,20 +21,6 @@ import org.osmdroid.tileprovider.tilesource.XYTileSource
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 
-val TONER: OnlineTileSourceBase = XYTileSource(
-    "Stamen Toner",
-    0, 20, 256, ".png", arrayOf(
-        "https://tile.anticomputer.club/tiles/stamen_toner/",
-    ), "© OpenStreetMap contributors",
-    TileSourcePolicy(
-        2,
-        (TileSourcePolicy.FLAG_NO_BULK
-                or TileSourcePolicy.FLAG_NO_PREVENTIVE
-                or TileSourcePolicy.FLAG_USER_AGENT_MEANINGFUL
-                or TileSourcePolicy.FLAG_USER_AGENT_NORMALIZED)
-    )
-)
-
 @Composable
 fun OpenStreetMapView(
     modifier: Modifier = Modifier,
@@ -43,6 +29,19 @@ fun OpenStreetMapView(
     // style: OnlineTileSourceBase = TONER,
     onSizeChanged: (IntSize) -> Unit = {}
 ) {
+    val TONER: OnlineTileSourceBase = XYTileSource(
+        "Stamen Toner",
+        0, 20, 256, ".png", arrayOf(
+            "https://tile.anticomputer.club/tiles/stamen_toner/",
+        ), "© OpenStreetMap contributors",
+        TileSourcePolicy(
+            2,
+            (TileSourcePolicy.FLAG_NO_BULK
+                    or TileSourcePolicy.FLAG_NO_PREVENTIVE
+                    or TileSourcePolicy.FLAG_USER_AGENT_MEANINGFUL
+                    or TileSourcePolicy.FLAG_USER_AGENT_NORMALIZED)
+        )
+    )
     val context = LocalContext.current
 
     // configure osmdroid
@@ -52,7 +51,7 @@ fun OpenStreetMapView(
     // create + remember MapView
     val mapView = remember {
         MapView(context).apply {
-            setTileSource(TileSourceFactory.MAPNIK) // TODO this can be added to settings
+            setTileSource(TONER) // TODO this can be added to settings
             setMultiTouchControls(true)
             controller.setZoom(15.0)
             controller.setCenter(coordinates)
