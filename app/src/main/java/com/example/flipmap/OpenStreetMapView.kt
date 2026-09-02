@@ -47,6 +47,7 @@ fun OpenStreetMapView(
     // configure osmdroid
     Configuration.getInstance()
         .load(context, getDefaultSharedPreferences(context))
+    OpenStreetMapTileProviderConstants.setUserAgentValue(BuildConfig.APPLICATION_ID);
 
     // create + remember MapView
     val mapView = remember {
