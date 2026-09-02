@@ -47,7 +47,7 @@ fun OpenStreetMapView(
     // configure osmdroid
     Configuration.getInstance()
         .load(context, getDefaultSharedPreferences(context))
-   Configuration.getInstance().setUserAgentValue(BuildConfig.APPLICATION_ID)
+   Configuration.getInstance().setUserAgentValue("anticomputer.club 0.0.0")
     // create + remember MapView
     val mapView = remember {
         MapView(context).apply {
